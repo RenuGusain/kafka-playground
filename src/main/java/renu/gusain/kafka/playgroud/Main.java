@@ -1,4 +1,4 @@
-package renu.gusain.aws.playgroud;
+package renu.gusain.kafka.playgroud;
 
 public class Main {
     public static void main(String[] args) {
