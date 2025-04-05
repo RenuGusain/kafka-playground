@@ -4,14 +4,22 @@ server:
 
 spring:
   kafka:
+    # List of Kafka broker addresses that the application will connect to.
     bootstrap-servers: localhost:29092,localhost:29093,localhost:29094
     consumer:
       group-id: demo-group
+      # Defines what to do when there is no initial offset or if the current offset doesn't exist.
+      # "earliest" means start consuming from the beginning of the topic.
       auto-offset-reset: earliest
+      # Deserializer class to convert the Kafka message key from bytes to String.
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # Error-handling deserializer that wraps the actual value deserializer to catch and handle deserialization errors.
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
+        # Delegate class that will be used by ErrorHandlingDeserializer to deserialize the value (actual payload).
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        # Specifies which Java packages are trusted for deserializing JSON payloads.
+        # "*" means all packages are trusted (use with caution in production due to security risks).
         spring.json.trusted.packages: "*"
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer

@@ -1,46 +1,58 @@
-version: '3.8'
+version: '3.8'  # Docker Compose version
 
 services:
+
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
+    image: provectuslabs/kafka-ui:latest  # UI tool for monitoring and managing Kafka clusters
     container_name: kafka-ui
     ports:
-      - "8080:8080"
+      - "8080:8080"  # Expose Kafka UI on localhost:8080
     depends_on:
       - kafka1
       - kafka2
-      - kafka3
+      - kafka3  # Ensure Kafka brokers are started before this service
     environment:
+      # Naming the cluster for UI display
       KAFKA_CLUSTERS_0_NAME: local-cluster
+      
+      # Kafka broker addresses as seen from kafka-ui (Docker network names)
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:9092,kafka2:9093,kafka3:9094
+      
+      # Zookeeper address used by the Kafka cluster
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
+    image: confluentinc/cp-zookeeper:7.5.0  # Zookeeper image used by Kafka for broker coordination
     container_name: zookeeper
     ports:
-      - "2181:2181"
+      - "2181:2181"  # Expose Zookeeper client port
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_CLIENT_PORT: 2181  # Port on which Zookeeper listens for client connections
+      ZOOKEEPER_TICK_TIME: 2000    # Basic time unit (ms) used for Zookeeper heartbeats and timeouts
+    volumes:
+     - zookeeper-data:/var/lib/zookeeper  # Persist Zookeeper state
 
   kafka1:
-    image: confluentinc/cp-kafka:7.5.0
+    image: confluentinc/cp-kafka:7.5.0  # Kafka broker image
     container_name: kafka1
     ports:
-    - "9092:9092"
-    - "29092:29092"
+      - "9092:9092"    # Internal communication port (used inside Docker network)
+      - "29092:29092"  # External access port (used by apps outside Docker)
     depends_on:
-    - zookeeper
+      - zookeeper  # Kafka needs Zookeeper to start
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_BROKER_ID: 1  # Unique ID for this Kafka broker
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # Zookeeper endpoint for Kafka registration
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT  # Map of listener names to protocols
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:9092,EXTERNAL://localhost:29092
+        # How Kafka advertises itself (host:port) for internal and external clients
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
-
+        # Kafka listens on all network interfaces for internal and external communication
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL  # Used for broker-to-broker communication
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3  # Replication factor for the __consumer_offsets topic
+      KAFKA_MIN_INSYNC_REPLICAS: 2  # Minimum replicas that must acknowledge a write for it to be considered successful
+    volumes:
+      - kafka1-data:/var/lib/kafka/data  # Persist Kafka broker 1 data
 
   kafka2:
     image: confluentinc/cp-kafka:7.5.0
@@ -59,6 +71,8 @@ services:
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:29093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
+    volumes:
+      - kafka2-data:/var/lib/kafka/data  # Persist Kafka broker 2 data
 
   kafka3:
     image: confluentinc/cp-kafka:7.5.0
@@ -77,3 +91,12 @@ services:
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:9094,EXTERNAL://localhost:29094
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9094,EXTERNAL://0.0.0.0:29094
+    volumes:
+      - kafka3-data:/var/lib/kafka/data  # Persist Kafka broker 3 data
+# ✅ Define all named volumes used above
+volumes:
+  zookeeper-data:
+  kafka1-data:
+  kafka2-data:
+  kafka3-data:
+
